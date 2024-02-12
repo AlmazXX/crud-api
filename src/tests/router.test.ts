@@ -6,6 +6,7 @@ import { ApiUser, User } from '../types';
 const server = createServer(router);
 
 describe('router instance test', () => {
+  let expectedUser: ApiUser;
   test('should receive epmty list of users', async () => {
     const expected: ApiUser[] = [];
     const responce = await supertest(server).get('/api/users');
@@ -22,12 +23,22 @@ describe('router instance test', () => {
     };
 
     const responce = await supertest(server).post('/api/users').send(newUser);
-    const resBody = responce.body;
+    expectedUser = responce.body;
 
     expect(responce.statusCode).toBe(201);
-    expect(resBody).toHaveProperty('id');
-    expect(resBody.username).toEqual(newUser.username);
-    expect(resBody.age).toEqual(newUser.age);
-    expect(resBody.hobbies).toEqual(newUser.hobbies);
+    expect(expectedUser).toHaveProperty('id');
+    expect(expectedUser.username).toEqual(newUser.username);
+    expect(expectedUser.age).toEqual(newUser.age);
+    expect(expectedUser.hobbies).toEqual(newUser.hobbies);
+  });
+
+  test('should receive created user', async () => {
+    const responce = await supertest(server).get(
+      `/api/users/${expectedUser.id}`,
+    );
+
+    expect(responce.status).toBe(200);
+    expect(responce.body.id).toEqual(expectedUser.id);
+    expect(responce.body).toEqual(expectedUser);
   });
 });
