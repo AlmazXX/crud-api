@@ -1,17 +1,6 @@
 import http from 'http';
 import { Handler, Request, Responce } from '../types';
-
-const HTTP_METHODS = {
-  GET: 'GET',
-  POST: 'POST',
-  PUT: 'PUT',
-  DELETE: 'DELETE',
-  PATCH: 'PATCH',
-  HEAD: 'HEAD',
-  OPTIONS: 'OPTIONS',
-  CONNECT: 'CONNECT',
-  TRACE: 'TRACE',
-};
+import { HTTP_METHODS, REGEX_FOR_ID } from '../constants';
 
 class Router {
   routes: Map<string, Handler>;
@@ -70,18 +59,26 @@ class Router {
     const { url, method } = req;
 
     if (!url || !method) {
-      console.log('400 Bad Request');
       res.writeHead(400, { 'Content-Type': 'text/plain' });
       res.write('Bad Request');
       return res.end();
     }
 
-    const routeKey = `${method} ${url}`;
+    const pathParts = url.trim().split('/');
+
+    if (REGEX_FOR_ID.test(pathParts[pathParts.length - 1])) {
+      const param = { id: pathParts[pathParts.length - 1] };
+      pathParts[pathParts.length - 1] = ':id';
+      req.param = param;
+    }
+
+    const pathUnited = pathParts.join('/');
+
+    const routeKey = `${method} ${pathUnited}`;
 
     const handler = this.routes.get(routeKey);
 
     if (!handler) {
-      console.log('404 Not Found');
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.write('Incorrect url');
       return res.end();

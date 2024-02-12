@@ -1,7 +1,7 @@
 import { IncomingMessage, ServerResponse } from 'http';
 
 export interface Request extends IncomingMessage {
-  param?: string;
+  param?: Record<string, string>;
 }
 
 export interface Responce extends ServerResponse<IncomingMessage> {
