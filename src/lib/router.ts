@@ -1,6 +1,6 @@
 import http from 'http';
-import { Handler, Request, Responce } from '../types';
 import { HTTP_METHODS, REGEX_FOR_ID } from '../constants';
+import { Handler, Request, Responce } from '../types';
 
 class Router {
   routes: Map<string, Handler>;
@@ -55,32 +55,27 @@ class Router {
     this.addRoute(HTTP_METHODS.TRACE, path, handler);
   }
 
-  handleRequest(req: Request, res: Responce) {
+  async handleRequest(req: Request, res: Responce) {
     const { url, method } = req;
+    req.body = await this.getBody(req);
+    res.send = this.buildResponce(res);
 
     if (!url || !method) {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.write('Bad Request');
+      const message = { error: 'Bad Request' };
+
+      res.send(400, message);
       return res.end();
     }
 
-    const pathParts = url.trim().split('/');
-
-    if (REGEX_FOR_ID.test(pathParts[pathParts.length - 1])) {
-      const param = { id: pathParts[pathParts.length - 1] };
-      pathParts[pathParts.length - 1] = ':id';
-      req.param = param;
-    }
-
-    const pathUnited = pathParts.join('/');
-
-    const routeKey = `${method} ${pathUnited}`;
+    const path = this.parsePath(url, req);
+    const routeKey = `${method} ${path}`;
 
     const handler = this.routes.get(routeKey);
 
     if (!handler) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.write('Incorrect url');
+      const message = { error: 'Incorrect url' };
+
+      res.send(404, message);
       return res.end();
     }
 
@@ -90,6 +85,57 @@ class Router {
   printRoutes() {
     console.log(this.routes.entries());
   }
+
+  private getBody(req: Request): Promise<string> {
+    return new Promise((resolve, reject) => {
+      let body: string = '';
+      req.setEncoding('utf8');
+
+      req.on('data', (chunk) => {
+        body += chunk;
+      });
+
+      req.on('end', () => {
+        resolve(body);
+      });
+
+      req.on('error', (error) => {
+        reject(error);
+      });
+    });
+  }
+
+  private buildResponce(responce: Responce) {
+    return function (
+      status: number,
+      data: unknown,
+      headers?: Record<string, string>,
+    ) {
+      if (status === 204) {
+        responce.writeHead(status);
+      } else {
+        const stringifiedData = JSON.stringify(data);
+        responce.writeHead(status, {
+          'content-type': 'application/json',
+          'content-length': Buffer.byteLength(stringifiedData),
+          ...headers,
+        });
+        responce.write(stringifiedData);
+      }
+    };
+  }
+
+  private parsePath(url: string, req: Request) {
+    const pathParts = url.trim().split('/');
+
+    if (REGEX_FOR_ID.test(pathParts[pathParts.length - 1])) {
+      const param = { id: pathParts[pathParts.length - 1] };
+      pathParts[pathParts.length - 1] = ':id';
+      req.param = param;
+    }
+
+    return pathParts.join('/');
+  }
 }
 
 function createServer(router: Router) {
@@ -98,23 +144,4 @@ function createServer(router: Router) {
   });
 }
 
-function getBody(req: Request): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let data: string = '';
-    req.setEncoding('utf8');
-
-    req.on('data', (chunk) => {
-      data += chunk;
-    });
-
-    req.on('end', () => {
-      resolve(data);
-    });
-
-    req.on('error', (error) => {
-      reject(error);
-    });
-  });
-}
-
-export { Router, createServer, getBody };
+export { Router, createServer };

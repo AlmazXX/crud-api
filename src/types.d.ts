@@ -2,10 +2,15 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 export interface Request extends IncomingMessage {
   param?: Record<string, string>;
+  body?: string;
 }
 
-export interface Responce extends ServerResponse<IncomingMessage> {
-  req: IncomingMessage;
+export interface Responce extends ServerResponse {
+  send?: (
+    status: number,
+    data: unknown,
+    headers?: Record<string, string>,
+  ) => void;
 }
 
 export type Handler = (
