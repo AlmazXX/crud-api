@@ -1,10 +1,8 @@
-import http from 'http';
 import { port } from './config/config';
-import router from './routers/router';
+import { createServer } from './lib/router';
+import router from './router/router';
 
-const server = http.createServer((req, res) => {
-  router.handleRequest(req, res);
-});
+const server = createServer(router);
 
 server.listen(port, function serverListenerCb() {
   console.log('We are at port %d', port);
