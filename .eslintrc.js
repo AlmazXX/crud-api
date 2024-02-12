@@ -26,5 +26,5 @@ module.exports = {
   },
   plugins: ['@typescript-eslint', 'prettier'],
   rules: {},
-  ignorePatterns: ['.eslintrc.js'],
+  ignorePatterns: ['.eslintrc.js', 'webpack.*.js', 'dist/bundle.js'],
 };
